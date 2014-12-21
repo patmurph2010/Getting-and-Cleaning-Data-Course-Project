@@ -1,0 +1,41 @@
+run_analysis <- function() {
+  
+  extractor <- function(name, subject){
+  keep_rows <- y_bind == name & subject_test_train == subject
+  new_array <- test_train[keep_rows,]
+  colSums(new_array)/nrow(new_array)
+  }
+  
+  test_vector <- read.table("UCI HAR Dataset/test/X_test.txt")
+  train_vector <- read.table("UCI HAR Dataset/train/X_train.txt")
+  test_train <- rbind(test_vector, train_vector)
+  activity_labels <- read.table("UCI HAR Dataset/activity_labels.txt")
+  features <- read.table("UCI HAR Dataset/features.txt")
+  y_train <- read.table("UCI HAR Dataset/train/y_train.txt")
+  y_test <- read.table("UCI HAR Dataset/test/y_test.txt")
+  y_bind <- rbind(y_test, y_train)
+  subject_train <- read.table("UCI HAR Dataset/train/subject_train.txt")
+  subject_test <- read.table("UCI HAR Dataset/test/subject_test.txt")
+  subject_test_train <- rbind(subject_test, subject_train)
+  colnames(test_train) <- features[, 2]
+  mean_or_std <- grepl("mean(", features[, 2], fixed = TRUE) | grepl("std(", features[, 2], fixed = TRUE)
+  test_train <- test_train[, mean_or_std]
+  activity_names <- unique(y_bind[,1])
+  ordered_activity_names <- activity_names[order(activity_names)]
+  y_names <- activity_labels[y_bind[,1], 2]
+  unique_subject <- unique(subject_test_train[,1])
+  ordered_subject <- unique_subject[order(unique_subject)]
+  unique_names <- unique(y_names)
+  ordered_names <- unique_names[order(unique_names)]
+  subject <- rep(ordered_subject, each = length(ordered_names))
+  names <- rep(ordered_activity_names, length(ordered_subject))
+  tidy_matrix <- matrix(data = NA, nrow = length(subject), ncol = ncol(test_train))
+  for(i in 1:length(subject)) {
+    tidy_matrix[i, ] <- extractor(names[i], subject[i])
+  }
+  colnames(tidy_matrix) <- colnames(test_train)
+  rownames_vector <- vector(length = length(subject))
+  for(i in 1:length(subject)) rownames_vector[i] <- paste("Subject", subject[i], "Activity", activity_labels[names[i], 2], sep = " ")
+  rownames(tidy_matrix) <- rownames_vector
+  write.table(tidy_matrix, file = "tidy.txt", row.names = FALSE)
+}
